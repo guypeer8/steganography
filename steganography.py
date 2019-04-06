@@ -1,3 +1,5 @@
+from lib.binary import pad_zeroes, encode_text, create_encoded_text_parts
+from lib.utils import create_str_parts_array
 from os.path import splitext
 from math import sqrt, ceil
 from PIL import Image
@@ -6,43 +8,6 @@ from sys import argv
 FILE = 'ocean.jpg'
 STEG_FILE = 'steganographic.png'
 
-def pad_zeroes(s, pad = 8):
-    s = s.replace('0b', '')
-    size = len(s)
-    if size > pad:
-        return s[-pad:]
-
-    pad_size = pad - size
-    while pad_size > 0:
-        s = '0' + s
-        pad_size -= 1
-
-    return s
-
-def create_str_parts_array(string, parts):
-    return [string[i:i + parts] for i in range(0, len(string), parts)]
-
-def encode_char(char, to_binary = True):
-    encoded = char.encode()[0]
-    if to_binary:
-        encoded = pad_zeroes(bin(encoded))
-
-    return encoded
-
-def encode_text(text, to_binary = True):
-    encoded_text = ''
-    for char in text:
-        encoded_char = encode_char(char, to_binary)
-        encoded_text += encoded_char
-
-    return encoded_text
-
-def create_encoded_text_parts(text, parts = 2):
-    encoded_text = encode_text(text)
-    text_parts = create_str_parts_array(encoded_text, parts)
-    text_parts.reverse()
-    return text_parts
-
 def convert_image_data(image_data, interceptors = [], iterations=None):
     iterations = len(image_data) if iterations is None else iterations
     for i in range(0, iterations):
@@ -50,19 +15,6 @@ def convert_image_data(image_data, interceptors = [], iterations=None):
             image_data[i] = tuple(map(interceptor, image_data[i]))
 
     return image_data
-
-def get_diff(f1 = FILE, f2 = STEG_FILE):
-    with Image.open(f1) as im1:
-        with Image.open(f2) as im2:
-            image1_data, image2_data = list(map(lambda im: im.getdata(), [im1, im2]))
-
-            diff_factor = 0
-            for i in range(0, len(image1_data)):
-                r1, g1, b1 = image1_data[i]
-                r2, g2, b2 = image2_data[i]
-                diff_factor += pow(r1 - r2, 2) + pow(g1 - g2, 2) + pow(b1 - b2, 2)
-
-    return {'pixels': len(image1_data), 'diff': ceil(sqrt(diff_factor))}
 
 def encode_image(text, file = FILE, steganographic_file = STEG_FILE):
     with Image.open(file) as im:
@@ -102,7 +54,20 @@ def decode_image(file = STEG_FILE, text_size = 100):
 
         return ''.join(decoded_text_array)
 
-if __name__ == '__main__':
+def get_diff(f1 = FILE, f2 = STEG_FILE):
+    with Image.open(f1) as im1:
+        with Image.open(f2) as im2:
+            image1_data, image2_data = list(map(lambda im: im.getdata(), [im1, im2]))
+
+            diff_factor = 0
+            for i in range(0, len(image1_data)):
+                r1, g1, b1 = image1_data[i]
+                r2, g2, b2 = image2_data[i]
+                diff_factor += pow(r1 - r2, 2) + pow(g1 - g2, 2) + pow(b1 - b2, 2)
+
+    return {'pixels': len(image1_data), 'diff': ceil(sqrt(diff_factor))}
+
+def main():
     if len(argv) > 1:
         arguments = argv[1:]
         args_count = len(arguments)
@@ -113,3 +78,6 @@ if __name__ == '__main__':
             elif action == '--decode': print(decode_image(text_size=int(value)))
     else:
         print('Please provide arguments')
+
+if __name__ == '__main__':
+    main()
