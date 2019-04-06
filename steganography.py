@@ -8,6 +8,17 @@ from sys import argv
 FILE = 'ocean.jpg'
 STEG_FILE = 'steganographic.png'
 
+ENCODING_ERROR = 'Can\'t encode {} characters text on {} pixels rgb image'
+
+# determines how many pixels are needed to encode text when changing the 2 least significant bits
+def get_required_pixels_for_text_encoding(text_size):
+    return ceil(text_size * 4 / 3)
+
+def is_encodable(text, image_data):
+    image_data_size = len(image_data)
+    required_image_data_size = get_required_pixels_for_text_encoding(len(text))
+    return required_image_data_size < image_data_size
+
 def convert_image_data(image_data, interceptors = [], iterations=None):
     iterations = len(image_data) if iterations is None else iterations
     for i in range(0, iterations):
@@ -21,6 +32,9 @@ def encode_image(text, file = FILE, steganographic_file = STEG_FILE):
         if not im.mode == 'RGB': im = im.convert('RGB')
 
         image_data = list(im.getdata())
+        if not is_encodable(text, image_data):
+            raise Exception(ENCODING_ERROR.format(len(text), len(image_data)))
+
         convert_image_data(image_data, [lambda x: pad_zeroes(bin(x))])
 
         text_parts = create_encoded_text_parts(text)
@@ -40,15 +54,15 @@ def decode_image(file = STEG_FILE, text_size = 100):
         if not im.mode == 'RGB': im = im.convert('RGB')
 
         image_data = list(im.getdata())
-        relevant_image_cells_count = ceil(text_size * 4 / 3) #2 least significant bits encoded for each rgb portion
-        text_bits_count = text_size * 8 #number of bits that represent the text
+        relevant_image_cells_count = get_required_pixels_for_text_encoding(text_size)
+        text_bits_count = text_size * 8 # number of bits that represent the text
         convert_image_data(image_data, [lambda x: pad_zeroes(bin(x), 2)], iterations=relevant_image_cells_count)
 
         bit_string = ''
         for i in range(0, relevant_image_cells_count):
             bit_string += ''.join(image_data[i])
 
-        bit_string = bit_string[:text_bits_count] #normalize bit string to text bit size
+        bit_string = bit_string[:text_bits_count] # normalize bit string to text bit size
         bits_array = create_str_parts_array(bit_string, 8)
         decoded_text_array = list(map(lambda x: chr(int(x, 2)), bits_array))
 
