@@ -1,4 +1,4 @@
-from lib.binary import pad_zeroes, encode_text, create_encoded_text_parts
+from lib.binary import pad_zeroes, create_encoded_text_parts
 from lib.utils import create_str_parts_array
 from os.path import splitext
 from math import sqrt, ceil
