@@ -29,6 +29,16 @@ def convert_image_data(image_data, interceptors = [], skip = 0, iterations = Non
 
     return image_data
 
+def get_encode_conversion_interceptors(parts):
+    return [
+        lambda x: pad_zeroes(bin(x)),
+        lambda x: (x[:6] + parts.pop()) if len(parts) > 0 else x,
+        lambda x: int(x, 2),
+    ]
+
+def get_decode_conversion_interceptors():
+    return [lambda x: pad_zeroes(bin(x), 2)]
+
 def encode_image(text, file = FILE, steganographic_file = STEG_FILE):
     with Image.open(file) as im:
         if not im.mode == 'RGB': im = im.convert('RGB')
@@ -37,27 +47,20 @@ def encode_image(text, file = FILE, steganographic_file = STEG_FILE):
         if not is_encodable(text, image_data):
             raise Exception(ENCODING_ERROR.format(len(text), len(image_data)))
 
-        def get_image_conversion_interceptors(parts):
-            return [
-                lambda x: pad_zeroes(bin(x)),
-                lambda x: (x[:6] + parts.pop()) if len(parts) > 0 else x,
-                lambda x: int(x, 2),
-            ]
-
         text_size = len(text)
 
         text_size_binary = pad_zeroes(bin(text_size), 24)
         encoded_text_size_parts = create_str_parts_array(text_size_binary, reversed=True)
         convert_image_data(
             image_data,
-            get_image_conversion_interceptors(encoded_text_size_parts),
+            get_encode_conversion_interceptors(encoded_text_size_parts),
             iterations=START_INDICATION_PIXELS,
         )
 
         text_parts = create_encoded_text_parts(text)
         convert_image_data(
             image_data,
-            get_image_conversion_interceptors(text_parts),
+            get_encode_conversion_interceptors(text_parts),
             skip=START_INDICATION_PIXELS,
             iterations=get_required_pixels_for_text_encoding(text_size),
         )
@@ -71,11 +74,9 @@ def decode_image(file = STEG_FILE):
 
         image_data = list(im.getdata())
 
-        convert_image_data(
-            image_data,
-            [lambda x: pad_zeroes(bin(x), 2)],
-            iterations=START_INDICATION_PIXELS,
-        )
+        decode_interceptors = get_decode_conversion_interceptors()
+
+        convert_image_data(image_data, decode_interceptors, iterations=START_INDICATION_PIXELS)
 
         start_indicating_bit_string = join([join(image_data[i]) for i in range(0, START_INDICATION_PIXELS)])
         text_size = int(start_indicating_bit_string, 2)
@@ -84,7 +85,7 @@ def decode_image(file = STEG_FILE):
         text_bits_count = text_size * 8 # number of bits that represent the text
         convert_image_data(
             image_data,
-            [lambda x: pad_zeroes(bin(x), 2)],
+            decode_interceptors,
             skip=START_INDICATION_PIXELS,
             iterations=required_pixels_for_text_encoding,
         )
