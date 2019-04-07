@@ -21,12 +21,7 @@ def encode_char(char, to_binary = True):
     return encoded
 
 def encode_text(text, to_binary = True):
-    encoded_text = ''
-    for char in text:
-        encoded_char = encode_char(char, to_binary)
-        encoded_text += encoded_char
-
-    return encoded_text
+    return ''.join([encode_char(char, to_binary) for char in text])
 
 def create_encoded_text_parts(text, parts = 2):
     encoded_text = encode_text(text)

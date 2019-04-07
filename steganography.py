@@ -1,5 +1,5 @@
 from lib.binary import pad_zeroes, create_encoded_text_parts
-from lib.utils import create_str_parts_array
+from lib.utils import create_str_parts_array, join
 from os.path import splitext
 from math import sqrt, ceil
 from PIL import Image
@@ -7,7 +7,7 @@ from sys import argv
 
 FILE = 'ocean.jpg'
 STEG_FILE = 'steganographic.png'
-
+START_INDICATION_PIXELS = 4 # number of pixels used for indicating text size
 ENCODING_ERROR = 'Can\'t encode {} characters text on {} pixels rgb image'
 
 # determines how many pixels are needed to encode text when changing the 2 least significant bits
@@ -17,7 +17,7 @@ def get_required_pixels_for_text_encoding(text_size):
 def is_encodable(text, image_data):
     image_data_size = len(image_data)
     required_image_data_size = get_required_pixels_for_text_encoding(len(text))
-    return required_image_data_size < image_data_size
+    return START_INDICATION_PIXELS + required_image_data_size <= image_data_size
 
 def convert_image_data(image_data, interceptors = [], skip = 0, iterations = None):
     image_size = len(image_data)
@@ -37,43 +37,65 @@ def encode_image(text, file = FILE, steganographic_file = STEG_FILE):
         if not is_encodable(text, image_data):
             raise Exception(ENCODING_ERROR.format(len(text), len(image_data)))
 
+        def get_image_conversion_interceptors(parts):
+            return [
+                lambda x: pad_zeroes(bin(x)),
+                lambda x: (x[:6] + parts.pop()) if len(parts) > 0 else x,
+                lambda x: int(x, 2),
+            ]
+
+        text_size = len(text)
+
+        text_size_binary = pad_zeroes(bin(text_size), 24)
+        encoded_text_size_parts = create_str_parts_array(text_size_binary, reversed=True)
+        convert_image_data(
+            image_data,
+            get_image_conversion_interceptors(encoded_text_size_parts),
+            iterations=START_INDICATION_PIXELS,
+        )
+
         text_parts = create_encoded_text_parts(text)
         convert_image_data(
             image_data,
-            [
-                lambda x: pad_zeroes(bin(x)),
-                lambda x: (x[:6] + text_parts.pop()) if len(text_parts) > 0 else x,
-                lambda x: int(x, 2),
-            ],
-            iterations=get_required_pixels_for_text_encoding(len(text))
+            get_image_conversion_interceptors(text_parts),
+            skip=START_INDICATION_PIXELS,
+            iterations=get_required_pixels_for_text_encoding(text_size),
         )
 
         im.putdata(image_data)
         im.save(steganographic_file)
 
-        return len(text)
-
-def decode_image(file = STEG_FILE, text_size = 100):
+def decode_image(file = STEG_FILE):
     with Image.open(file) as im:
         if not im.mode == 'RGB': im = im.convert('RGB')
 
         image_data = list(im.getdata())
-        relevant_image_cells_count = get_required_pixels_for_text_encoding(text_size)
 
+        convert_image_data(
+            image_data,
+            [lambda x: pad_zeroes(bin(x), 2)],
+            iterations=START_INDICATION_PIXELS,
+        )
+
+        start_indicating_bit_string = join([join(image_data[i]) for i in range(0, START_INDICATION_PIXELS)])
+        text_size = int(start_indicating_bit_string, 2)
+
+        required_pixels_for_text_encoding = get_required_pixels_for_text_encoding(text_size)
         text_bits_count = text_size * 8 # number of bits that represent the text
         convert_image_data(
             image_data,
             [lambda x: pad_zeroes(bin(x), 2)],
-            iterations=relevant_image_cells_count
+            skip=START_INDICATION_PIXELS,
+            iterations=required_pixels_for_text_encoding,
         )
 
-        bit_string = ''.join([''.join(image_data[i]) for i in range(0, relevant_image_cells_count)])
-
+        start, end = START_INDICATION_PIXELS, required_pixels_for_text_encoding + START_INDICATION_PIXELS
+        bit_string = join([join(image_data[i]) for i in range(start, end)])
         bit_string = bit_string[:text_bits_count] # normalize bit string to text bit size
         bits_array = create_str_parts_array(bit_string, 8)
         decoded_text_array = list(map(lambda x: chr(int(x, 2)), bits_array))
 
-        return ''.join(decoded_text_array)
+        return join(decoded_text_array)
 
 def get_diff(f1 = FILE, f2 = STEG_FILE):
     with Image.open(f1) as im1:
@@ -92,11 +114,13 @@ def main():
     if len(argv) > 1:
         arguments = argv[1:]
         args_count = len(arguments)
-        if args_count == 1 and arguments[0] == '--diff': print(get_diff())
+        if args_count == 1:
+            arg = arguments[0]
+            if arg == '--diff': print(get_diff())
+            elif arg == '--decode': print(decode_image())
         elif args_count == 2:
             action, value = arguments
-            if action == '--encode': print(encode_image(value))
-            elif action == '--decode': print(decode_image(text_size=int(value)))
+            if action == '--encode': encode_image(value)
     else:
         print('Please provide arguments')
 

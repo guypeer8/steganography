@@ -4,9 +4,8 @@
 ##### Usage:
 ```js
 python3 steganography.py --encode "I know someday you'll have a beautiful life, I know you'll be the sun in somebody else's skys, but whyy! whyy! whyyy... can't it be, oh can't it be mineeeeeee... ahhh"
-# returns 166, which is the encoded text size we need to pass when decoding
  
-python3 steganography.py --decode 166 
+python3 steganography.py --decode 
 # returns the underline text: "I know someday you'll have a beautiful life, I know you'll be the sun in somebody else's skys, but whyy! whyy! whyyy... can't it be, oh can't it be mineeeeeee... ahhh"
 
 python3 steganography.py --diff
