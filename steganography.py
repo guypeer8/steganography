@@ -10,11 +10,11 @@ STEG_FILE = 'steganographic.png'
 START_INDICATION_PIXELS = 4 # number of pixels used for indicating text size
 ENCODING_ERROR = 'Can\'t encode {} characters text on {} pixels rgb image'
 ARGUMENTS_INFO = """
-    Please provide arguments:
-      (*) --encode, -e [ text ]
-      (*) --decode, -d 
-      (*) --diff, -c
-"""
+Please provide arguments:
+  (*) --encode, -e [ text ]
+  (*) --decode, -d 
+  (*) --diff, -c
+""".strip()
 
 # determines how many pixels are needed to encode text when changing the 2 least significant bits
 def get_required_pixels_for_text_encoding(text_size):
@@ -37,7 +37,7 @@ def convert_image_data(image_data, interceptors = [], skip = 0, iterations = Non
 
 def get_encode_conversion_interceptors(parts):
     return [
-        lambda x: pad_zeroes(bin(x)),
+        lambda x: pad_zeroes(bin(x), 8),
         lambda x: (x[:6] + parts.pop()) if len(parts) > 0 else x,
         lambda x: int(x, 2),
     ]
@@ -119,20 +119,32 @@ def get_diff(f1 = FILE, f2 = STEG_FILE):
 
 def main():
     if len(argv) > 1:
-        arguments = argv[1:]
-        args_count = len(arguments)
-        if args_count == 1:
-            arg = arguments[0]
-            if arg in ('-c', '--diff'):
-                print(get_diff())
-            elif arg in ('-d', '--decode'):
-                print(decode_image())
-        elif args_count == 2:
-            action, value = arguments
-            if action in ('-e', '--encode'):
-                encode_image(value)
+        arguments, args_dict = argv[1:], {}
+        args_pairs_list = create_str_parts_array(arguments)
+        for args_pair in args_pairs_list:
+            args_pair_size = len(args_pair)
+            if args_pair_size == 1:
+                args_dict[args_pair[0]] = True
+            elif args_pair_size == 2:
+                arg, value = args_pair
+                args_dict[arg] = value
+
+        file, steg_file = FILE, STEG_FILE
+        dict_keys = args_dict.keys()
+        if '-f' in dict_keys or '--file' in dict_keys:
+            file = args_dict.get('-f') or args_dict.get('--file')
+        if '-sf' in dict_keys or '--steg-file' in dict_keys:
+            steg_file = args_dict.get('-sf') or args_dict.get('--steg-file')
+
+        if '-c' in dict_keys or '--diff' in dict_keys:
+            print(get_diff(file, steg_file))
+        elif '-d' in dict_keys or '--decode' in dict_keys:
+            print(decode_image(steg_file))
+        elif '-e' in dict_keys or '--encode' in dict_keys:
+            encode_text = args_dict.get('-e') or args_dict.get('--encode')
+            encode_image(encode_text, file, steg_file)
     else:
-        print(ARGUMENTS_INFO.strip())
+        print(ARGUMENTS_INFO)
 
 if __name__ == '__main__':
     main()
