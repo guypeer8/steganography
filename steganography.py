@@ -79,10 +79,13 @@ def decode_image(file = STEG_FILE):
         if not im.mode == 'RGB': im = im.convert('RGB')
 
         image_data = list(im.getdata())
-
         decode_interceptors = get_decode_conversion_interceptors()
 
-        convert_image_data(image_data, decode_interceptors, iterations=START_INDICATION_PIXELS)
+        convert_image_data(
+            image_data,
+            decode_interceptors,
+            iterations=START_INDICATION_PIXELS,
+        )
 
         start_indicating_bit_string = join([join(image_data[i]) for i in range(0, START_INDICATION_PIXELS)])
         text_size = int(start_indicating_bit_string, 2)
@@ -120,26 +123,33 @@ def get_diff(f1 = FILE, f2 = STEG_FILE):
 def main():
     if len(argv) > 1:
         arguments, args_dict = argv[1:], {}
+
         args_pairs_list = create_str_parts_array(arguments)
         for args_pair in args_pairs_list:
             args_pair_size = len(args_pair)
+
             if args_pair_size == 1:
                 args_dict[args_pair[0]] = True
+
             elif args_pair_size == 2:
                 arg, value = args_pair
                 args_dict[arg] = value
 
         file, steg_file = FILE, STEG_FILE
         dict_keys = args_dict.keys()
+
         if '-f' in dict_keys or '--file' in dict_keys:
             file = args_dict.get('-f') or args_dict.get('--file')
+
         if '-sf' in dict_keys or '--steg-file' in dict_keys:
             steg_file = args_dict.get('-sf') or args_dict.get('--steg-file')
 
         if '-c' in dict_keys or '--diff' in dict_keys:
             print(get_diff(file, steg_file))
+
         elif '-d' in dict_keys or '--decode' in dict_keys:
             print(decode_image(steg_file))
+
         elif '-e' in dict_keys or '--encode' in dict_keys:
             encode_text = args_dict.get('-e') or args_dict.get('--encode')
             encode_image(encode_text, file, steg_file)
