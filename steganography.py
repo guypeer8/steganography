@@ -131,7 +131,8 @@ def main():
             action, value = arguments
             if action in ('-e', '--encode'):
                 encode_image(value)
-    else: print(ARGUMENTS_INFO)
+    else:
+        print(ARGUMENTS_INFO)
 
 if __name__ == '__main__':
     main()
