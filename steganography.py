@@ -9,6 +9,12 @@ FILE = 'ocean.jpg'
 STEG_FILE = 'steganographic.png'
 START_INDICATION_PIXELS = 4 # number of pixels used for indicating text size
 ENCODING_ERROR = 'Can\'t encode {} characters text on {} pixels rgb image'
+ARGUMENTS_INFO = """
+    Please provide arguments:
+      --encode, -e [ text ]
+      --decode, -d 
+      --diff, -c
+"""
 
 # determines how many pixels are needed to encode text when changing the 2 least significant bits
 def get_required_pixels_for_text_encoding(text_size):
@@ -117,13 +123,15 @@ def main():
         args_count = len(arguments)
         if args_count == 1:
             arg = arguments[0]
-            if arg == '--diff': print(get_diff())
-            elif arg == '--decode': print(decode_image())
+            if arg in ('-c', '--diff'):
+                print(get_diff())
+            elif arg in ('-d', '--decode'):
+                print(decode_image())
         elif args_count == 2:
             action, value = arguments
-            if action == '--encode': encode_image(value)
-    else:
-        print('Please provide arguments')
+            if action in ('-e', '--encode'):
+                encode_image(value)
+    else: print(ARGUMENTS_INFO)
 
 if __name__ == '__main__':
     main()
