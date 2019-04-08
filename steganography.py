@@ -11,9 +11,9 @@ START_INDICATION_PIXELS = 4 # number of pixels used for indicating text size
 ENCODING_ERROR = 'Can\'t encode {} characters text on {} pixels rgb image'
 ARGUMENTS_INFO = """
     Please provide arguments:
-      --encode, -e [ text ]
-      --decode, -d 
-      --diff, -c
+      (*) --encode, -e [ text ]
+      (*) --decode, -d 
+      (*) --diff, -c
 """
 
 # determines how many pixels are needed to encode text when changing the 2 least significant bits
@@ -132,7 +132,7 @@ def main():
             if action in ('-e', '--encode'):
                 encode_image(value)
     else:
-        print(ARGUMENTS_INFO)
+        print(ARGUMENTS_INFO.strip())
 
 if __name__ == '__main__':
     main()
