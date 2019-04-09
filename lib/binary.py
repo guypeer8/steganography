@@ -16,9 +16,10 @@ def pad_zeroes(s, pad=8):
 
 
 def encode_char(char, to_binary=True):
-    encoded = char.encode()[0]
+    encoded = char.encode()
     if to_binary:
-        encoded = pad_zeroes(bin(encoded))
+        integer = encoded[0]
+        encoded = pad_zeroes(bin(integer))
 
     return encoded
 

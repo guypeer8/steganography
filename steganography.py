@@ -62,7 +62,7 @@ def encode_image(text, file=FILE, steganographic_file=STEG_FILE):
         text_size = len(text)
 
         text_size_binary = pad_zeroes(bin(text_size), 24)
-        encoded_text_size_parts = create_str_parts_array(text_size_binary, reversed=True)
+        encoded_text_size_parts = create_str_parts_array(text_size_binary, is_reversed=True)
         convert_image_data(
             image_data,
             get_encode_conversion_interceptors(encoded_text_size_parts),
