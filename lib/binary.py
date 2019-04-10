@@ -1,4 +1,4 @@
-from .utils import create_str_parts_array
+from .utils import create_str_parts_array, join
 
 
 def pad_zeroes(s, pad=8):
@@ -25,11 +25,10 @@ def encode_char(char, to_binary=True):
 
 
 def encode_text(text, to_binary=True):
-    return ''.join([encode_char(char, to_binary) for char in text])
+    return join([encode_char(char, to_binary) for char in text])
 
 
 def create_encoded_text_parts(text, parts=2):
     encoded_text = encode_text(text)
-    text_parts = create_str_parts_array(encoded_text, parts)
-    text_parts.reverse()
+    text_parts = create_str_parts_array(encoded_text, parts, is_reversed=True)
     return text_parts
