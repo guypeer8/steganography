@@ -116,6 +116,12 @@ def decode_image(file=STEG_FILE):
         return join(decoded_text_array)
 
 
+def calc_square_distance(rgb_1, rgb_2):
+    r1, g1, b1 = rgb_1
+    r2, g2, b2 = rgb_2
+    return pow(r1 - r2, 2) + pow(g1 - g2, 2) + pow(b1 - b2, 2)
+
+
 def get_diff(f1=FILE, f2=STEG_FILE):
     with Image.open(f1) as im1:
         with Image.open(f2) as im2:
@@ -123,9 +129,7 @@ def get_diff(f1=FILE, f2=STEG_FILE):
 
             diff_factor = 0
             for i in range(0, len(image1_data)):
-                r1, g1, b1 = image1_data[i]
-                r2, g2, b2 = image2_data[i]
-                diff_factor += pow(r1 - r2, 2) + pow(g1 - g2, 2) + pow(b1 - b2, 2)
+                diff_factor += calc_square_distance(image1_data[i], image2_data[i])
 
     return {'pixels': len(image1_data), 'diff': ceil(sqrt(diff_factor))}
 
